@@ -42,7 +42,7 @@ def get_input_image(year: int, default_value: float = 1000.0) -> ee.Image:
         .filterDate(f"{year}-1-1", f"{year}-12-31")
         .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20))
         .map(mask_sentinel2_clouds)
-        .select("B.*")
+        .select("B4", "B3", "B2")
         .median()
         .unmask(default_value)
     )

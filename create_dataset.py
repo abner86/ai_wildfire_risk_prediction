@@ -1,10 +1,4 @@
 """This creates training and validation datasets for the model.
-As inputs it takes a Sentinel-2 image consisting of 13 bands.
-Each band contains data for a specific range of the electromagnetic spectrum.
-    https://developers.google.com/earth-engine/datasets/catalog/COPERNICUS_S2_HARMONIZED
-As outputs it returns the probabilities of each classification for every pixel.
-The land cover labels for the training dataset come from the ESA WorldCover.
-    https://developers.google.com/earth-engine/datasets/catalog/ESA_WorldCover_v100
 """
 
 from __future__ import annotations
