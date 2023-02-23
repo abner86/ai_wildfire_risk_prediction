@@ -33,7 +33,7 @@ def sample_points(
     seed: int,
     polygons: list[tuple[float, float]],
     points_per_class: int,
-    scale: int = 1000,
+    scale: int = 500,
 ) -> Iterable[tuple[float, float]]:
     """Selects around the same number of points for every classification.
     This expects the input image to be an integer, for balanced regression points
