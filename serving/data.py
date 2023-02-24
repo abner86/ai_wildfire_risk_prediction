@@ -39,7 +39,7 @@ def mask_sentinel2_clouds(image: ee.Image) -> ee.Image:
 def get_input_image(year: int, default_value: float = 1000.0) -> ee.Image:
     landsat = (
         ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
-        .filterDate(f"{year}-1-1", f"{year}-12-31")
+        .filterDate(f"{year}-6-1", f"{year}-8-31")
         .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20))
         .map(mask_sentinel2_clouds)
         .select("B.*")
@@ -49,19 +49,19 @@ def get_input_image(year: int, default_value: float = 1000.0) -> ee.Image:
     # modis = ee.ImageCollection("MODIS/061/MCD43A4").filterDate(f"{year}-1-1", f"{year}-12-31").select("Nadir_Reflectance_B.*").median()
     firms_collection = (
         ee.ImageCollection("FIRMS")
-        .filterDate(f"{year}-1-1", f"{year}-12-31")
+        .filterDate(f"{year}-6-1", f"{year}-8-31")
         .select("T21")
         .median()
     )
     env_collection = (
         ee.ImageCollection("IDAHO_EPSCOR/GRIDMET")
-        .filterDate(f"{year}-1-1", f"{year}-12-31")
+        .filterDate(f"{year}-6-1", f"{year}-8-31")
         .select(["tmmx", "tmmn", "pr", "vs", "sph"])
         .median()
     )
     veg_collection = (
         ee.ImageCollection("MODIS/006/MOD13A2")
-        .filterDate(f"{year}-1-1", f"{year}-12-31")
+        .filterDate(f"{year}-6-1", f"{year}-8-31")
         .select("NDVI")
         .median()
     )
