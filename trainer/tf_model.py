@@ -4,7 +4,7 @@ import tensorflow as tf
 
 # Default values.
 EPOCHS = 100
-BATCH_SIZE = 512
+BATCH_SIZE = 312
 KERNEL_SIZE = 5
 
 # Constants.
@@ -99,17 +99,11 @@ def create_model(
     # Define the Fully Convolutional Network.
     model = tf.keras.Sequential(
         [
-            tf.keras.Input(shape=(None, None, NUM_INPUTS), name="inputs"),
+            tf.keras.Input(shape=(None, None, NUM_INPUTS)),
             normalization,
-            tf.keras.layers.Conv2D(32, KERNEL_SIZE, activation="relu", name="conv2D_1"),
-            tf.keras.layers.Conv2D(64, KERNEL_SIZE, activation="relu", name="conv2D_2"),
-            tf.keras.layers.Conv2DTranspose(
-                16, KERNEL_SIZE, activation="relu", name="deconv2D_1"
-            ),
-            tf.keras.layers.Conv2DTranspose(
-                8, KERNEL_SIZE, activation="relu", name="deconv2D_2"
-            ),
-            tf.keras.layers.Dense(NUM_CLASSES, activation="softmax", name="firerisk"),
+            tf.keras.layers.Conv2D(32, kernel_size, activation="relu"),
+            tf.keras.layers.Conv2DTranspose(16, kernel_size, activation="relu"),
+            tf.keras.layers.Dense(NUM_CLASSES, activation="softmax"),
         ]
     )
     model.compile(
