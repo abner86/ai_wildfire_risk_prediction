@@ -64,6 +64,18 @@ def render_input(patch: np.ndarray, max: float = 3000) -> np.ndarray:
     rgb_patch = np.stack([red, green, blue], axis=-1)
     return render_rgb_images(rgb_patch, 0, max)
 
+def show_inputs(inputs: np.ndarray, max: float = 3000) -> None:
+    """Shows the input data as an image."""
+    fig = make_subplots(rows=1, cols=1, subplot_titles=("Sentinel 2"))
+    fig.add_trace(Image(z=render_input(inputs, max)), row=1, col=1)
+    fig.show()
+
+
+def show_outputs(outputs: np.ndarray) -> None:
+    """Shows the outputs/labels data as an image."""
+    fig = make_subplots(rows=1, cols=1, subplot_titles=("Land cover",))
+    fig.add_trace(Image(z=render_label_image(outputs)), row=1, col=1)
+    fig.show()
 
 def show_example(inputs: np.ndarray, labels: np.ndarray, max: float = 3000):
     """Shows an example of inputs and labels an image."""
