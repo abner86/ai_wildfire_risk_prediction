@@ -37,7 +37,16 @@ def mask_sentinel2_clouds(image: ee.Image) -> ee.Image:
 
 
 def get_input_image(year: int, default_value: float = 1000.0) -> ee.Image:
-    modis = ee.ImageCollection("MODIS/061/MCD43A4").filterDate(f"{year}-1-1", f"{year}-12-31").select("Nadir_Reflectance_B.*").median()
+    landsat = (
+        ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
+        .filterDate(f"{year}-1-1", f"{year}-12-31")
+        .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20))
+        .map(mask_sentinel2_clouds)
+        .select("B.*")
+        .median()
+        .unmask(default_value)
+    )
+    #modis = ee.ImageCollection("MODIS/061/MCD43A4").filterDate(f"{year}-1-1", f"{year}-12-31").select("Nadir_Reflectance_B.*").median()
     firms_collection = (
         ee.ImageCollection("FIRMS")
         .filterDate(f"{year}-1-1", f"{year}-12-31")
@@ -58,7 +67,7 @@ def get_input_image(year: int, default_value: float = 1000.0) -> ee.Image:
     )
     elevation = ee.Image("CGIAR/SRTM90_V4").select("elevation")
     merged_image = (
-        modis.addBands(firms_collection)
+        landsat.addBands(firms_collection)
         .addBands(env_collection)
         .addBands(veg_collection)
         .addBands(elevation)
