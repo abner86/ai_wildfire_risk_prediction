@@ -16,7 +16,7 @@ from serving import data
 
 # Default values.
 POINTS_PER_CLASS = 100
-PATCH_SIZE = 256
+PATCH_SIZE = 128
 MAX_REQUESTS = 20  # default EE request quota
 
 # Simplified polygons covering most land areas in the world.

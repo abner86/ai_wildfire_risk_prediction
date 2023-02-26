@@ -66,14 +66,14 @@ def render_input(patch: np.ndarray, max: float = 3000) -> np.ndarray:
 
 def show_inputs(inputs: np.ndarray, max: float = 3000) -> None:
     """Shows the input data as an image."""
-    fig = make_subplots(rows=1, cols=1, subplot_titles=("Sentinel 2"))
+    fig = make_subplots(rows=1, cols=1, subplot_titles=("Input"))
     fig.add_trace(Image(z=render_input(inputs, max)), row=1, col=1)
     fig.show()
 
 
 def show_outputs(outputs: np.ndarray) -> None:
     """Shows the outputs/labels data as an image."""
-    fig = make_subplots(rows=1, cols=1, subplot_titles=("Land cover",))
+    fig = make_subplots(rows=1, cols=1, subplot_titles=("Fire Risk",))
     fig.add_trace(Image(z=render_label_image(outputs)), row=1, col=1)
     fig.show()
 
