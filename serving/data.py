@@ -54,7 +54,7 @@ def get_input_image(year: int, default_value: float = 1000.0) -> ee.Image:
         .median()
         .unmask(default_value)
     )
-    modis = ee.ImageCollection("MODIS/061/MCD43A4").filterDate(f"{year}-1-1", f"{year}-12-31").select("Nadir_Reflectance_B.*").median()
+    #modis = ee.ImageCollection("MODIS/061/MCD43A4").filterDate(f"{year}-1-1", f"{year}-12-31").select("Nadir_Reflectance_B.*").median()
     firms_collection = (
         ee.ImageCollection("FIRMS")
         .filterDate(f"{year}-1-1", f"{year}-12-31")
