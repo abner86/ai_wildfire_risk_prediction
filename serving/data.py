@@ -10,14 +10,6 @@ import requests
 
 SCALE = 10  # meters per pixel
 
-US_ROI = ee.Geometry.Polygon(
-        [[[-124.848974, 24.396308],
-          [-66.885444, 24.396308],
-          [-66.885444, 49.384358],
-          [-124.848974, 49.384358],
-          [-124.848974, 24.396308]]], None, False
-    )
-
 def ee_init() -> None:
     """Authenticate and initialize Earth Engine with the default credentials."""
     # Use the Earth Engine High Volume endpoint.
@@ -44,6 +36,9 @@ def mask_sentinel2_clouds(image: ee.Image) -> ee.Image:
 
 
 def get_input_image(year: int, default_value: float = 1000.0) -> ee.Image:
+    label_image = get_label_image()
+    US_ROI = label_image.geometry()
+    
     landsat = (
         ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
         .filterDate(f"{year}-1-1", f"{year}-12-31")
