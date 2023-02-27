@@ -10,6 +10,13 @@ import requests
 
 SCALE = 10  # meters per pixel
 
+US_ROI = ee.Geometry.Polygon(
+        [[[-124.848974, 24.396308],
+          [-66.885444, 24.396308],
+          [-66.885444, 49.384358],
+          [-124.848974, 49.384358],
+          [-124.848974, 24.396308]]], None, False
+    )
 
 def ee_init() -> None:
     """Authenticate and initialize Earth Engine with the default credentials."""
@@ -40,6 +47,7 @@ def get_input_image(year: int, default_value: float = 1000.0) -> ee.Image:
     landsat = (
         ee.ImageCollection("COPERNICUS/S2_HARMONIZED")
         .filterDate(f"{year}-1-1", f"{year}-12-31")
+        .filterBounds(US_ROI)
         .filter(ee.Filter.lt("CLOUDY_PIXEL_PERCENTAGE", 20))
         .map(mask_sentinel2_clouds)
         .select("B.*")
@@ -50,22 +58,25 @@ def get_input_image(year: int, default_value: float = 1000.0) -> ee.Image:
     firms_collection = (
         ee.ImageCollection("FIRMS")
         .filterDate(f"{year}-1-1", f"{year}-12-31")
+        .filterBounds(US_ROI)
         .select("T21")
         .median()
     )
     env_collection = (
         ee.ImageCollection("IDAHO_EPSCOR/GRIDMET")
         .filterDate(f"{year}-1-1", f"{year}-12-31")
+        .filterBounds(US_ROI)
         .select(["tmmx", "tmmn", "pr", "vs", "sph"])
         .median()
     )
     veg_collection = (
         ee.ImageCollection("MODIS/006/MOD13A2")
         .filterDate(f"{year}-1-1", f"{year}-12-31")
+        .filterBounds(US_ROI)
         .select("NDVI")
         .median()
     )
-    elevation = ee.Image("CGIAR/SRTM90_V4").select("elevation")
+    elevation = ee.Image("CGIAR/SRTM90_V4").clip(US_ROI).select("elevation")
     merged_image = (
         landsat.addBands(firms_collection)
         .addBands(env_collection)
