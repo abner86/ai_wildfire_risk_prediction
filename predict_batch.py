@@ -37,13 +37,13 @@ def get_inputs(
 ) -> tuple[str, np.ndarray]:
     """Get an inputs patch to predict.
     Args:
-        location: A name, year, and (longitude, latitude) point.
+        location: year, and (longitude, latitude) point.
         patch_size: Size in pixels of the surrounding square patch.
         predictions_path: Directory path to save prediction results.
     Returns: A (file_path_name, inputs_patch) pair.
     """
     data.ee_init()
-    path = FileSystems.join(predictions_path, location.name, str(location.year))
+    path = FileSystems.join(predictions_path, str(location.year))
     inputs = data.get_input_patch(location.year, location.point, patch_size)
     return (path, inputs)
 
@@ -76,7 +76,7 @@ def run_tensorflow(
     We use `max_requests` to limit the number of concurrent requests to Earth Engine
     to avoid quota issues. You can request for an increase of quota if you need it.
     Args:
-        locations: A collection of name, point, and year.
+        locations: A collection of point, and year.
         model_path: Directory path to load the trained model from.
         predictions_path: Directory path to save prediction results.
         patch_size: Size in pixels of the surrounding square patch.
@@ -144,7 +144,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--locations-file",
         default=LOCATIONS_FILE,
-        help="CSV file with the location names and points to predict.",
+        help="CSV file with the location points to predict.",
     )
     parser.add_argument(
         "--patch-size",
