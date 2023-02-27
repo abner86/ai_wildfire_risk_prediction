@@ -26,7 +26,6 @@ YEARS = [2022]
 
 
 class Location(NamedTuple):
-    name: str
     year: int
     point: tuple[float, float]  # (lon, lat)
 
