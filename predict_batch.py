@@ -164,7 +164,7 @@ if __name__ == "__main__":
     # Load the points of interest from the CSV file.
     with open(args.locations_file) as f:
         locations = [
-            Location((float(row["lon"]), float(row["lat"])))
+            Location(year, (float(row["lon"]), float(row["lat"])))
             for row in csv.DictReader(f)
             for year in YEARS
         ]
