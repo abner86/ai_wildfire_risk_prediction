@@ -113,7 +113,7 @@ def run_tensorflow(
     """Runs an Apache Beam pipeline to create a dataset.
     This fetches data from Earth Engine and creates a TFRecords dataset.
     We use `max_requests` to limit the number of concurrent requests to Earth Engine
-    to avoid quota issues. You can request for an increas of quota if you need it.
+    to avoid quota issues. You can request for an increase of quota if you need it.
     Args:
         data_path: Directory path to save the TFRecord files.
         points_per_class: Number of points to get for each classification.

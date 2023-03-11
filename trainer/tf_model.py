@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import tensorflow as tf
+from sklearn.model_selection import GridSearchCV
+from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 
 # Default values.
 EPOCHS = 100
@@ -83,31 +85,34 @@ def split_dataset(
 
 
 def create_model(
-    dataset: tf.data.Dataset, kernel_size: int = KERNEL_SIZE
+    kernel_size: int,
+    num_filters_1: int,
+    num_filters_2: int,
+    num_filters_3: int,
 ) -> tf.keras.Model:
     """Creates a Fully Convolutional Network Keras model.
-    Make sure you pass the *training* dataset, not the validation or full dataset.
     Args:
-        dataset: Training dataset used to normalize inputs.
         kernel_size: Size of the square of neighboring pixels for the model to look at.
+        num_filters_1: Number of filters for the first convolutional layer.
+        num_filters_2: Number of filters for the second convolutional layer.
+        num_filters_3: Number of filters for the first deconvolutional layer.
     Returns: A compiled fresh new model (not trained).
     """
     # Adapt the preprocessing layers.
     normalization = tf.keras.layers.Normalization()
-    normalization.adapt(dataset.map(lambda inputs, _: inputs))
 
     # Define the Fully Convolutional Network.
     model = tf.keras.Sequential(
         [
             tf.keras.Input(shape=(None, None, NUM_INPUTS), name="inputs"),
             normalization,
-            tf.keras.layers.Conv2D(32, KERNEL_SIZE, activation="relu", name="conv2D_1"),
-            tf.keras.layers.Conv2D(64, KERNEL_SIZE, activation="relu", name="conv2D_2"),
+            tf.keras.layers.Conv2D(num_filters_1, kernel_size, activation="relu", name="conv2D_1"),
+            tf.keras.layers.Conv2D(num_filters_2, kernel_size, activation="relu", name="conv2D_2"),
             tf.keras.layers.Conv2DTranspose(
-                16, KERNEL_SIZE, activation="relu", name="deconv2D_1"
+                num_filters_3, kernel_size, activation="relu", name="deconv2D_1"
             ),
             tf.keras.layers.Conv2DTranspose(
-                8, KERNEL_SIZE, activation="relu", name="deconv2D_2"
+                8, kernel_size, activation="relu", name="deconv2D_2"
             ),
             tf.keras.layers.Dense(NUM_CLASSES, activation="softmax", name="firerisk"),
         ]
@@ -132,6 +137,7 @@ def run(
     batch_size: int = BATCH_SIZE,
     kernel_size: int = KERNEL_SIZE,
     train_test_ratio: int = TRAIN_TEST_RATIO,
+    param_grid: dict = {},
 ) -> tf.keras.Model:
     """Creates and trains the model.
     Args:
@@ -141,6 +147,7 @@ def run(
         batch_size: Number of examples per training batch.
         kernel_size: Size of the square of neighboring pixels for the model to look at.
         train_test_ratio: Percent of the data to use for training.
+        param_grid: Grid of hyperparameters to search over.
     Returns: The trained model.
     """
     print(f"data_path: {data_path}")
@@ -154,7 +161,27 @@ def run(
     dataset = read_dataset(data_path)
     (train_dataset, test_dataset) = split_dataset(dataset, batch_size, train_test_ratio)
 
-    model = create_model(train_dataset, kernel_size)
+    model = KerasClassifier(
+            build_fn=create_model,
+            kernel_size=kernel_size,
+            verbose=0
+        )
+    
+    # Use GridSearchCV to find the best hyperparameters.
+    grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1)
+    grid_result = grid.fit(train_dataset)
+    
+    # Print the best parameters.
+    print(f"Best parameters: {grid_result.best_params_}")
+    
+    # Re-create the model with the best hyperparameters.
+    model = create_model(
+        kernel_size=grid_result.best_params_["kernel_size"],
+        num_filters_1=grid_result.best_params_["num_filters_1"],
+        num_filters_2=grid_result.best_params_["num_filters_2"],
+        num_filters_3=grid_result.best_params_["num_filters_3"],
+    )
+    
     print(model.summary())
 
     model.fit(
