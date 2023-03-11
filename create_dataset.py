@@ -19,13 +19,10 @@ POINTS_PER_CLASS = 100
 PATCH_SIZE = 128
 MAX_REQUESTS = 20  # default EE request quota
 
-# Simplified polygons covering most land areas in the world.
-US_POLYGON = [[-127.18, 19.39], [-64.03, 19.39], [-64.03, 51.29], [-127.18, 51.29], [-127.18, 19.39]]
-
 
 def sample_points(
     seed: int,
-    polygons: list[tuple[float, float]],
+    polygonsGeometry,
     points_per_class: int,
     scale: int = 500,
 ) -> Iterable[tuple[float, float]]:
@@ -43,7 +40,7 @@ def sample_points(
     """
     data.ee_init()
     image = data.get_label_image()
-    region = ee.Geometry.Polygon(polygons)
+    region = polygonsGeometry
     points = image.stratifiedSample(
         points_per_class,
         region=region,
@@ -107,7 +104,7 @@ def run_tensorflow(
     points_per_class: int = POINTS_PER_CLASS,
     patch_size: int = PATCH_SIZE,
     max_requests: int = MAX_REQUESTS,
-    polygons: list[tuple[float, float]] = US_POLYGON,
+    polygons: any = data.get_label_image().geometry(),
     beam_args: Optional[List[str]] = None,
 ) -> None:
     """Runs an Apache Beam pipeline to create a dataset.
