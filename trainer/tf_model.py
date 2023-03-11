@@ -15,6 +15,16 @@ NUM_CLASSES = 8
 TRAIN_TEST_RATIO = 80  # percent for training, the rest for testing/validation
 SHUFFLE_BUFFER_SIZE = BATCH_SIZE * 8
 
+# Define a function to parse and read a batch of examples from TFRecords
+def read_batch(serialized_batch):
+    # Parse and read each example in the batch
+    examples = tf.map_fn(read_example, serialized_batch, dtype=(tf.float32, tf.float32))
+    # Split the examples into inputs and labels tensors
+    inputs, labels = examples
+    # Batch the inputs and labels tensors
+    inputs_batch = tf.stack(inputs)
+    labels_batch = tf.stack(labels)
+    return inputs_batch, labels_batch
 
 def read_example(serialized: bytes) -> tuple[tf.Tensor, tf.Tensor]:
     """Parses and reads a training example from TFRecords.
@@ -26,9 +36,9 @@ def read_example(serialized: bytes) -> tuple[tf.Tensor, tf.Tensor]:
         "inputs": tf.io.FixedLenFeature([], tf.string),
         "labels": tf.io.FixedLenFeature([], tf.string),
     }
-    example = tf.io.parse_example(serialized, features_dict)
-    inputs = tf.io.parse_tensor(example["inputs"], tf.float32)
-    labels = tf.io.parse_tensor(example["labels"], tf.uint8)
+    examples = tf.io.parse_example(serialized, features_dict)
+    inputs = tf.io.parse_tensor(examples["inputs"], tf.float32)
+    labels = tf.io.parse_tensor(examples["labels"], tf.uint8)
 
     # TensorFlow cannot infer the shape's rank, so we set the shapes explicitly.
     inputs.set_shape([None, None, NUM_INPUTS])
@@ -39,7 +49,7 @@ def read_example(serialized: bytes) -> tuple[tf.Tensor, tf.Tensor]:
     return (inputs, one_hot_labels)
 
 
-def read_dataset(data_path: str) -> tf.data.Dataset:
+def read_dataset(data_path: str, batch_size: int = BATCH_SIZE) -> tf.data.Dataset:
     """Reads compressed TFRecord files from a directory into a tf.data.Dataset.
     Args:
         data_path: Local or Cloud Storage directory path where the TFRecord files are.
@@ -48,7 +58,10 @@ def read_dataset(data_path: str) -> tf.data.Dataset:
     file_pattern = tf.io.gfile.join(data_path, "*.tfrecord.gz")
     file_names = tf.data.Dataset.list_files(file_pattern).cache()
     dataset = tf.data.TFRecordDataset(file_names, compression_type="GZIP")
-    return dataset.map(read_example, num_parallel_calls=tf.data.AUTOTUNE)
+    return (dataset
+            .map(read_example, num_parallel_calls=tf.data.AUTOTUNE)
+            .batch(batch_size)
+            .map(read_batch, num_parallel_calls=tf.data.AUTOTUNE)))
 
 
 def split_dataset(
@@ -81,38 +94,35 @@ def split_dataset(
         .cache()  # cache the batches of examples
         .prefetch(tf.data.AUTOTUNE)  # prefetch the next batch
     )
+    
     return (train_dataset, validation_dataset)
 
-
 def create_model(
-    kernel_size: int,
-    num_filters_1: int,
-    num_filters_2: int,
-    num_filters_3: int,
+    dataset: tf.data.Dataset, kernel_size: int = KERNEL_SIZE
 ) -> tf.keras.Model:
     """Creates a Fully Convolutional Network Keras model.
+    Make sure you pass the *training* dataset, not the validation or full dataset.
     Args:
+        dataset: Training dataset used to normalize inputs.
         kernel_size: Size of the square of neighboring pixels for the model to look at.
-        num_filters_1: Number of filters for the first convolutional layer.
-        num_filters_2: Number of filters for the second convolutional layer.
-        num_filters_3: Number of filters for the first deconvolutional layer.
     Returns: A compiled fresh new model (not trained).
     """
     # Adapt the preprocessing layers.
     normalization = tf.keras.layers.Normalization()
+    normalization.adapt(dataset.map(lambda inputs, _: inputs))
 
     # Define the Fully Convolutional Network.
     model = tf.keras.Sequential(
         [
             tf.keras.Input(shape=(None, None, NUM_INPUTS), name="inputs"),
             normalization,
-            tf.keras.layers.Conv2D(num_filters_1, kernel_size, activation="relu", name="conv2D_1"),
-            tf.keras.layers.Conv2D(num_filters_2, kernel_size, activation="relu", name="conv2D_2"),
+            tf.keras.layers.Conv2D(32, KERNEL_SIZE, activation="relu", name="conv2D_1"),
+            tf.keras.layers.Conv2D(64, KERNEL_SIZE, activation="relu", name="conv2D_2"),
             tf.keras.layers.Conv2DTranspose(
-                num_filters_3, kernel_size, activation="relu", name="deconv2D_1"
+                16, KERNEL_SIZE, activation="relu", name="deconv2D_1"
             ),
             tf.keras.layers.Conv2DTranspose(
-                8, kernel_size, activation="relu", name="deconv2D_2"
+                8, KERNEL_SIZE, activation="relu", name="deconv2D_2"
             ),
             tf.keras.layers.Dense(NUM_CLASSES, activation="softmax", name="firerisk"),
         ]
@@ -129,7 +139,6 @@ def create_model(
     )
     return model
 
-
 def run(
     data_path: str,
     model_path: str,
@@ -137,7 +146,6 @@ def run(
     batch_size: int = BATCH_SIZE,
     kernel_size: int = KERNEL_SIZE,
     train_test_ratio: int = TRAIN_TEST_RATIO,
-    param_grid: dict = {},
 ) -> tf.keras.Model:
     """Creates and trains the model.
     Args:
@@ -147,7 +155,6 @@ def run(
         batch_size: Number of examples per training batch.
         kernel_size: Size of the square of neighboring pixels for the model to look at.
         train_test_ratio: Percent of the data to use for training.
-        param_grid: Grid of hyperparameters to search over.
     Returns: The trained model.
     """
     print(f"data_path: {data_path}")
@@ -161,27 +168,7 @@ def run(
     dataset = read_dataset(data_path)
     (train_dataset, test_dataset) = split_dataset(dataset, batch_size, train_test_ratio)
 
-    model = KerasClassifier(
-            build_fn=create_model,
-            kernel_size=kernel_size,
-            verbose=0
-        )
-    
-    # Use GridSearchCV to find the best hyperparameters.
-    grid = GridSearchCV(estimator=model, param_grid=param_grid, n_jobs=-1)
-    grid_result = grid.fit(train_dataset)
-    
-    # Print the best parameters.
-    print(f"Best parameters: {grid_result.best_params_}")
-    
-    # Re-create the model with the best hyperparameters.
-    model = create_model(
-        kernel_size=grid_result.best_params_["kernel_size"],
-        num_filters_1=grid_result.best_params_["num_filters_1"],
-        num_filters_2=grid_result.best_params_["num_filters_2"],
-        num_filters_3=grid_result.best_params_["num_filters_3"],
-    )
-    
+    model = create_model(train_dataset, kernel_size)
     print(model.summary())
 
     model.fit(
@@ -192,7 +179,6 @@ def run(
     model.save(model_path)
     print(f"Model saved to path: {model_path}")
     return model
-
 
 if __name__ == "__main__":
     import argparse
