@@ -61,7 +61,7 @@ def read_dataset(data_path: str, batch_size: int = BATCH_SIZE) -> tf.data.Datase
     return (dataset
             .map(read_example, num_parallel_calls=tf.data.AUTOTUNE)
             .batch(batch_size)
-            .map(read_batch, num_parallel_calls=tf.data.AUTOTUNE)))
+            .map(read_batch, num_parallel_calls=tf.data.AUTOTUNE))
 
 
 def split_dataset(
