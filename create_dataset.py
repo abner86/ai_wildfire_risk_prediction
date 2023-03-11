@@ -22,7 +22,6 @@ MAX_REQUESTS = 20  # default EE request quota
 
 def sample_points(
     seed: int,
-    polygonsGeometry,
     points_per_class: int,
     scale: int = 500,
 ) -> Iterable[tuple[float, float]]:
@@ -40,7 +39,7 @@ def sample_points(
     """
     data.ee_init()
     image = data.get_label_image()
-    region = polygonsGeometry
+    region = image.geometry()
     points = image.stratifiedSample(
         points_per_class,
         region=region,
@@ -104,7 +103,6 @@ def run_tensorflow(
     points_per_class: int = POINTS_PER_CLASS,
     patch_size: int = PATCH_SIZE,
     max_requests: int = MAX_REQUESTS,
-    polygons: any = data.get_label_image().geometry(),
     beam_args: Optional[List[str]] = None,
 ) -> None:
     """Runs an Apache Beam pipeline to create a dataset.
@@ -134,7 +132,7 @@ def run_tensorflow(
         (
             pipeline
             | "🌱 Make seeds" >> beam.Create(range(max_requests))
-            | "📌 Sample points" >> beam.FlatMap(sample_points, polygons, num_points)
+            | "📌 Sample points" >> beam.FlatMap(sample_points, num_points)
             | "🃏 Reshuffle" >> beam.Reshuffle()
             | "📑 Get examples" >> beam.FlatMap(try_get_example, patch_size)
             | "✍🏽 Serialize" >> beam.MapTuple(serialize_tensorflow)
