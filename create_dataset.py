@@ -63,7 +63,7 @@ def get_training_example(
     """
     data.ee_init()
     return (
-        data.get_input_patch(2022, lonlat, patch_size),
+        data.get_input_patch(2020, lonlat, patch_size),
         data.get_label_patch(lonlat, patch_size),
     )
 
