@@ -58,7 +58,13 @@ def read_dataset(data_path: str, batch_size: int = BATCH_SIZE) -> tf.data.Datase
     file_pattern = tf.io.gfile.join(data_path, "*.tfrecord.gz")
     file_names = tf.data.Dataset.list_files(file_pattern).cache()
     dataset = tf.data.TFRecordDataset(file_names, compression_type="GZIP")
-    return read_batch(dataset.batch(batch_size))
+    dataset = dataset.map(read_example, num_parallel_calls=tf.data.AUTOTUNE)
+    dataset = dataset.batch(batch_size)
+    dataset = dataset.map(lambda x, y: (tf.ensure_shape(x, [batch_size, None, None, NUM_INPUTS]),
+                                        tf.ensure_shape(y, [batch_size, None, None, NUM_CLASSES])))
+
+    return dataset
+
 
 def split_dataset(
     dataset: tf.data.Dataset,
