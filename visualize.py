@@ -87,7 +87,7 @@ def show_example(inputs: np.ndarray, labels: np.ndarray, max: float = 3000):
 def show_prediction(outputs: np.ndarray, labels: np.ndarray, max: float = 3000):
     """Shows an example of inputs and labels an image."""
     fig = make_subplots(rows=1, cols=2, subplot_titles=("Prediction", "WHP"))
-    fig.add_trace(Image(z=show_outputs(outputs)), row=1, col=1)
+    fig.add_trace(Image(z=render_label_image(outputs)), row=1, col=1)
     fig.add_trace(Image(z=render_label_image(labels)), row=1, col=2)
     fig.show()
 
