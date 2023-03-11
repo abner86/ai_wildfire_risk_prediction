@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import tensorflow as tf
-from sklearn.model_selection import GridSearchCV
-from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 
 # Default values.
 EPOCHS = 100
@@ -15,16 +13,6 @@ NUM_CLASSES = 8
 TRAIN_TEST_RATIO = 80  # percent for training, the rest for testing/validation
 SHUFFLE_BUFFER_SIZE = BATCH_SIZE * 8
 
-# Define a function to parse and read a batch of examples from TFRecords
-def read_batch(serialized_batch):
-    # Parse and read each example in the batch
-    examples = tf.map_fn(read_example, serialized_batch, dtype=(tf.float32, tf.float32))
-    # Split the examples into inputs and labels tensors
-    inputs, labels = examples
-    # Batch the inputs and labels tensors
-    inputs_batch = tf.stack(inputs)
-    labels_batch = tf.stack(labels)
-    return inputs_batch, labels_batch
 
 def read_example(serialized: bytes) -> tuple[tf.Tensor, tf.Tensor]:
     """Parses and reads a training example from TFRecords.
@@ -36,9 +24,9 @@ def read_example(serialized: bytes) -> tuple[tf.Tensor, tf.Tensor]:
         "inputs": tf.io.FixedLenFeature([], tf.string),
         "labels": tf.io.FixedLenFeature([], tf.string),
     }
-    examples = tf.io.parse_example(serialized, features_dict)
-    inputs = tf.io.parse_tensor(examples["inputs"], tf.float32)
-    labels = tf.io.parse_tensor(examples["labels"], tf.uint8)
+    example = tf.io.parse_single_example(serialized, features_dict)
+    inputs = tf.io.parse_tensor(example["inputs"], tf.float32)
+    labels = tf.io.parse_tensor(example["labels"], tf.uint8)
 
     # TensorFlow cannot infer the shape's rank, so we set the shapes explicitly.
     inputs.set_shape([None, None, NUM_INPUTS])
@@ -49,7 +37,7 @@ def read_example(serialized: bytes) -> tuple[tf.Tensor, tf.Tensor]:
     return (inputs, one_hot_labels)
 
 
-def read_dataset(data_path: str, batch_size: int = BATCH_SIZE) -> tf.data.Dataset:
+def read_dataset(data_path: str) -> tf.data.Dataset:
     """Reads compressed TFRecord files from a directory into a tf.data.Dataset.
     Args:
         data_path: Local or Cloud Storage directory path where the TFRecord files are.
@@ -58,12 +46,7 @@ def read_dataset(data_path: str, batch_size: int = BATCH_SIZE) -> tf.data.Datase
     file_pattern = tf.io.gfile.join(data_path, "*.tfrecord.gz")
     file_names = tf.data.Dataset.list_files(file_pattern).cache()
     dataset = tf.data.TFRecordDataset(file_names, compression_type="GZIP")
-    dataset = dataset.map(read_example, num_parallel_calls=tf.data.AUTOTUNE)
-    dataset = dataset.batch(batch_size)
-    dataset = dataset.map(lambda x, y: (tf.ensure_shape(x, [batch_size, None, None, NUM_INPUTS]),
-                                        tf.ensure_shape(y, [batch_size, None, None, NUM_CLASSES])))
-
-    return dataset
+    return dataset.map(read_example, num_parallel_calls=tf.data.AUTOTUNE)
 
 
 def split_dataset(
@@ -96,8 +79,8 @@ def split_dataset(
         .cache()  # cache the batches of examples
         .prefetch(tf.data.AUTOTUNE)  # prefetch the next batch
     )
-    
     return (train_dataset, validation_dataset)
+
 
 def create_model(
     dataset: tf.data.Dataset, kernel_size: int = KERNEL_SIZE
@@ -141,6 +124,7 @@ def create_model(
     )
     return model
 
+
 def run(
     data_path: str,
     model_path: str,
@@ -181,6 +165,7 @@ def run(
     model.save(model_path)
     print(f"Model saved to path: {model_path}")
     return model
+
 
 if __name__ == "__main__":
     import argparse
