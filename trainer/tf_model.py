@@ -26,7 +26,7 @@ def read_example(serialized: bytes) -> tuple[tf.Tensor, tf.Tensor]:
         "inputs": tf.io.FixedLenFeature([], tf.string),
         "labels": tf.io.FixedLenFeature([], tf.string),
     }
-    example = tf.io.parse_single_example(serialized, features_dict)
+    example = tf.io.parse_example(serialized, features_dict)
     inputs = tf.io.parse_tensor(example["inputs"], tf.float32)
     labels = tf.io.parse_tensor(example["labels"], tf.uint8)
 

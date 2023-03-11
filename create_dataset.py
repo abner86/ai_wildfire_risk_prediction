@@ -54,7 +54,7 @@ def sample_points(
 def get_training_example(
     lonlat: tuple[float, float], patch_size: int = PATCH_SIZE
 ) -> tuple[np.ndarray, np.ndarray]:
-    """Gets an (inputs, labels) training example for year 2022.
+    """Gets an (inputs, labels) training example for year 2020.
     Args:
         lonlat: A (longitude, latitude) pair for the point of interest.
         patch_size: Size in pixels of the surrounding square patch.
