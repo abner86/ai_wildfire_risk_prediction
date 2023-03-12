@@ -103,6 +103,7 @@ def create_model(
             normalization,
             tf.keras.layers.Conv2D(32, KERNEL_SIZE, activation="relu", name="conv2D_1"),
             tf.keras.layers.Conv2D(64, KERNEL_SIZE, activation="relu", name="conv2D_2"),
+            tf.keras.layers.Conv2D(128, KERNEL_SIZE, activation="relu", name="conv2D_3"),
             tf.keras.layers.Conv2DTranspose(
                 16, KERNEL_SIZE, activation="relu", name="deconv2D_1"
             ),
@@ -157,10 +158,12 @@ def run(
     model = create_model(train_dataset, kernel_size)
     print(model.summary())
 
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=10)
     model.fit(
         train_dataset,
         validation_data=test_dataset,
         epochs=epochs,
+        callbacks=[early_stopping],
     )
     model.save(model_path)
     print(f"Model saved to path: {model_path}")
