@@ -68,6 +68,7 @@ def split_dataset(
     """
     # Convert the tf.data.Dataset to a numpy array.
     examples = np.array(list(dataset.as_numpy_iterator()))
+    examples = np.stack(examples)
 
     # Split the data into training and validation sets.
     train_examples, val_examples = sklearn.model_selection.train_test_split(
