@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import tensorflow as tf
+from tensorflow.keras.callbacks import EarlyStopping
 
 # Default values.
 EPOCHS = 100
@@ -158,12 +159,11 @@ def run(
     model = create_model(train_dataset, kernel_size)
     print(model.summary())
 
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor="val_loss", patience=10)
     model.fit(
         train_dataset,
         validation_data=test_dataset,
         epochs=epochs,
-        callbacks=[early_stopping],
+        callbacks=[EarlyStopping(monitor='val_loss', patience=10)],
     )
     model.save(model_path)
     print(f"Model saved to path: {model_path}")
