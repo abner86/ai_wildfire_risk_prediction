@@ -103,14 +103,24 @@ def create_model(
             normalization,
             tf.keras.layers.Conv2D(32, kernel_size, activation="relu", name="conv2D_1"),
             tf.keras.layers.Conv2D(64, kernel_size, activation="relu", name="conv2D_2"),
+            tf.keras.layers.Conv2D(128, kernel_size, activation="relu", name="conv2D_3"),
+            tf.keras.layers.Conv2D(256, kernel_size, activation="relu", name="conv2D_4"),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2), name="maxpool_1"),
+            tf.keras.layers.MaxPool2D(pool_size=(2, 2), name="maxpool_2"),
             tf.keras.layers.Conv2DTranspose(
                 16, kernel_size, activation="relu", name="deconv2D_1"
             ),
             tf.keras.layers.Conv2DTranspose(
                 8, kernel_size, activation="relu", name="deconv2D_2"
             ),
+             tf.keras.layers.Conv2DTranspose(
+                4, kernel_size, activation="relu", name="deconv2D_3"
+            ),
+            tf.keras.layers.Conv2DTranspose(
+                2, kernel_size, activation="relu", name="deconv2D_4"
+            ),
             tf.keras.layers.Dense(NUM_CLASSES, activation="softmax", name="firerisk"),
-        ]
+    ]
     )
     model.compile(
         optimizer="adam",
