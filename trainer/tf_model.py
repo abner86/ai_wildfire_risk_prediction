@@ -5,7 +5,7 @@ import tensorflow as tf
 # Default values.
 EPOCHS = 100
 BATCH_SIZE = 512
-KERNEL_SIZE = 5
+KERNEL_SIZE = 3
 
 # Constants.
 NUM_INPUTS = 21
@@ -101,13 +101,13 @@ def create_model(
         [
             tf.keras.Input(shape=(None, None, NUM_INPUTS), name="inputs"),
             normalization,
-            tf.keras.layers.Conv2D(32, KERNEL_SIZE, activation="relu", name="conv2D_1"),
-            tf.keras.layers.Conv2D(64, KERNEL_SIZE, activation="relu", name="conv2D_2"),
+            tf.keras.layers.Conv2D(32, kernel_size, activation="relu", name="conv2D_1"),
+            tf.keras.layers.Conv2D(64, kernel_size, activation="relu", name="conv2D_2"),
             tf.keras.layers.Conv2DTranspose(
-                16, KERNEL_SIZE, activation="relu", name="deconv2D_1"
+                16, kernel_size, activation="relu", name="deconv2D_1"
             ),
             tf.keras.layers.Conv2DTranspose(
-                8, KERNEL_SIZE, activation="relu", name="deconv2D_2"
+                8, kernel_size, activation="relu", name="deconv2D_2"
             ),
             tf.keras.layers.Dense(NUM_CLASSES, activation="softmax", name="firerisk"),
         ]
