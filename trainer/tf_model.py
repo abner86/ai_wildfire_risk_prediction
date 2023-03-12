@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import tensorflow as tf
+import sklearn.model_selection
+import numpy as np
 
 # Default values.
 EPOCHS = 100
 BATCH_SIZE = 512
-KERNEL_SIZE = 3
+KERNEL_SIZE = 5
 
 # Constants.
 NUM_INPUTS = 21
 NUM_CLASSES = 8
 TRAIN_TEST_RATIO = 80  # percent for training, the rest for testing/validation
+RANDOM_STATE = 42
 SHUFFLE_BUFFER_SIZE = BATCH_SIZE * 8
 
 
@@ -52,34 +55,41 @@ def read_dataset(data_path: str) -> tf.data.Dataset:
 def split_dataset(
     dataset: tf.data.Dataset,
     batch_size: int = BATCH_SIZE,
-    train_test_ratio: int = TRAIN_TEST_RATIO,
+    train_size: float = TRAIN_TEST_RATIO,
+    random_state: int = RANDOM_STATE,
 ) -> tuple[tf.data.Dataset, tf.data.Dataset]:
     """Splits a dataset into training and validation subsets.
     Args:
         dataset: Full dataset with all the training examples.
         batch_size: Number of examples per training batch.
-        train_test_ratio: Percent of the data to use for training.
+        train_size: Percent of the data to use for training.
+        random_state: Seed used by the random number generator.
     Returns: A (training, validation) dataset pair.
     """
-    # For more information on how to optimize your tf.data.Dataset, see:
-    #   https://www.tensorflow.org/guide/data_performance
-    indexed_dataset = dataset.enumerate()  # add an index to each example
+    # Convert the tf.data.Dataset to a numpy array.
+    examples = np.array(list(dataset.as_numpy_iterator()))
+
+    # Split the data into training and validation sets.
+    train_examples, val_examples = sklearn.model_selection.train_test_split(
+        examples,
+        train_size=train_size,
+        random_state=random_state,
+    )
+
+    # Convert the training and validation sets back to tf.data.Dataset.
     train_dataset = (
-        indexed_dataset.filter(lambda i, _: i % 100 <= train_test_ratio)
-        .map(lambda _, data: data, num_parallel_calls=tf.data.AUTOTUNE)  # remove index
-        .cache()  # cache the individual parsed examples
-        .shuffle(SHUFFLE_BUFFER_SIZE)  # randomize the examples for the batches
-        .batch(batch_size)  # batch randomized examples
-        .prefetch(tf.data.AUTOTUNE)  # prefetch the next batch
+        tf.data.Dataset.from_tensor_slices(train_examples)
+        .shuffle(SHUFFLE_BUFFER_SIZE)
+        .batch(batch_size)
+        .prefetch(tf.data.AUTOTUNE)
     )
-    validation_dataset = (
-        indexed_dataset.filter(lambda i, _: i % 100 > train_test_ratio)
-        .map(lambda _, data: data, num_parallel_calls=tf.data.AUTOTUNE)  # remove index
-        .batch(batch_size)  # batch the parsed examples, no need to shuffle
-        .cache()  # cache the batches of examples
-        .prefetch(tf.data.AUTOTUNE)  # prefetch the next batch
+    val_dataset = (
+        tf.data.Dataset.from_tensor_slices(val_examples)
+        .batch(batch_size)
+        .prefetch(tf.data.AUTOTUNE)
     )
-    return (train_dataset, validation_dataset)
+
+    return train_dataset, val_dataset
 
 
 def create_model(
