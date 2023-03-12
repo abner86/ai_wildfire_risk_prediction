@@ -5,7 +5,7 @@ import tensorflow as tf
 # Default values.
 EPOCHS = 100
 BATCH_SIZE = 512
-KERNEL_SIZE = 5
+KERNEL_SIZE = 3
 
 # Constants.
 NUM_INPUTS = 21
